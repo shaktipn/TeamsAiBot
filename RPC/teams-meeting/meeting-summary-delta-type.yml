@@ -1,0 +1,11 @@
+name: MeetingSummaryDelta
+attributes:
+  - name: previousSummary
+    type: String
+  - name: updatedSummary
+    type: String
+  - name: updatedBy
+    type: Enum
+    cases:
+      - name: AI
+      - name: USER

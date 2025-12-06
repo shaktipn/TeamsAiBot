@@ -1,0 +1,15 @@
+name: MeetingSummary
+attributes:
+  - name: meetingId
+    type: String
+  - name: sessionId
+    type: UUID
+    comment: Unique identifier for a meeting and its related summary details stored with the application.
+  - name: summary
+    type: String
+  - name: initiatedAt
+    type: Timestamp
+    comment: Time at which the request for summary was initiated.
+  - name: completedAt
+    type: Timestamp
+    comment: Time at which the summary was fully completed.

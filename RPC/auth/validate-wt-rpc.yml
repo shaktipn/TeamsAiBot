@@ -1,0 +1,21 @@
+name: ValidateWT
+comment: |
+  Validates a web token (WT) from a web app. Returns the associated user identity and possibly
+  a new WT (If the current one is about to expire).
+request:
+  - name: wt
+    type: String
+response:
+  - name: userIdentity
+    type: UserIdentity
+  - name: wt
+    type: WebToken
+    optional: true
+    comment: |
+      This is returned only if the WT in the request is about to expire.
+      For example: If the WT validity time is 5 mins. If a request is made after 4 mins of creating the WT,
+      a new WT is created and returned.
+requiresAuthentication: SERVER_TO_SERVER
+errors:
+  - code: INVALID_WT
+  - code: USER_DISABLED

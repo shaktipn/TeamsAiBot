@@ -1,0 +1,16 @@
+name: CreateMeetingSession
+request:
+  - name: threadId
+    type: String
+  - name: messageId
+    type: String
+  - name: meetingId
+    type: String
+  - name: tenantId
+    type: String
+    comment: Tenant Id of where the meeting is happening.
+response:
+  - name: sessionId
+    type: UUID
+  - name: liveSummaryUrl
+    type: URL

@@ -1,0 +1,29 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Bot", "Bot", "{D3E09356-6418-F4F5-DDE9-09D519799B74}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeamsMediaBot", "Bot\TeamsMediaBot\TeamsMediaBot.csproj", "{76374226-D482-B145-2C42-930298F8AFE4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{76374226-D482-B145-2C42-930298F8AFE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76374226-D482-B145-2C42-930298F8AFE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76374226-D482-B145-2C42-930298F8AFE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76374226-D482-B145-2C42-930298F8AFE4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{76374226-D482-B145-2C42-930298F8AFE4} = {D3E09356-6418-F4F5-DDE9-09D519799B74}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4F0A2741-24FA-401D-B8E9-91893DA3A561}
+	EndGlobalSection
+EndGlobal

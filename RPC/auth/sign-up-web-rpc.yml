@@ -1,0 +1,12 @@
+name: SignUpWeb
+request:
+  - name: emailId
+    type: EmailId
+  - name: password
+    type: String
+requiresAuthentication: NONE
+errors:
+  - code: EMAIL_ID_ALREADY_EXISTS
+    comment: This emailId is already in use.
+  - code: INSECURE_PASSWORD
+    comment: Occurs when password doesn't pass the security requirements.

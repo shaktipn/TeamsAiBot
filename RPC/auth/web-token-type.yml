@@ -1,0 +1,6 @@
+name: WebToken
+attributes:
+  - name: wt
+    type: String
+  - name: expiresAt
+    type: Timestamp

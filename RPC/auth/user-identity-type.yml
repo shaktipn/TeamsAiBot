@@ -1,0 +1,7 @@
+name: UserIdentity
+attributes:
+  - name: id
+    type: UUID
+  - name: privileges
+    type: List
+    elementType: String

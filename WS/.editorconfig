@@ -1,0 +1,4 @@
+[*.{kt,kts}]
+ktlint_standard_no-wildcard-imports = enabled
+insert_final_newline = true
+max_line_length = 140

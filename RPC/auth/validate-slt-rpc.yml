@@ -1,0 +1,18 @@
+name: ValidateSLT
+comment: |
+  Validates a short-lived token (SLT) from a mobile app.
+  Returns the associated user identity and possibly a new SLT (if the current one is about to expire).
+request:
+  - name: slt
+    type: String
+response:
+  - name: userIdentity
+    type: UserIdentity
+  - name: slt
+    type: String
+    optional: true
+requiresAuthentication: SERVER_TO_SERVER
+errors:
+  - code: INVALID_SLT
+  - code: INVALID_LLT
+  - code: USER_DISABLED

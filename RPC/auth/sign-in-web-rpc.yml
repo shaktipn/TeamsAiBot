@@ -1,0 +1,11 @@
+name: SignInWeb
+comment: Verifies the user as per the database and sets Web token as a cookie
+request:
+  - name: emailId
+    type: EmailId
+  - name: password
+    type: String
+requiresAuthentication: NONE
+errors:
+  - code: INVALID_CREDENTIALS
+    comment: Occurs when the user details provided do not match any records

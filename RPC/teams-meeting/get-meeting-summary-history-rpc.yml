@@ -1,0 +1,10 @@
+name: GetMeetingSummaryHistory
+request:
+  - name: sessionId
+    type: UUID
+  - name: history
+    type: List
+    elementType: MeetingSummaryDelta
+errors:
+  - code: INVALID_SESSION_ID
+  

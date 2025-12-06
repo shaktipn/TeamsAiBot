@@ -1,0 +1,8 @@
+name: UpdateMeetingSummary
+request:
+  - name: sessionId
+    type: UUID
+  - name: updatedSummary
+    type: String
+errors:
+  - code: INVALID_SESSION_ID

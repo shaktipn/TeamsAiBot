@@ -1,0 +1,12 @@
+name: AddMeeting
+request:
+  - name: meetingId
+    type: String
+  - name: meetingPasscode
+    type: String
+    optional: true
+response:
+  - name: sessionId
+    type: UUID
+errors:
+  - code: UNSUCCESSFUL

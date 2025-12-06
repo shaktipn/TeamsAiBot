@@ -1,0 +1,5 @@
+name: GetAllMeetingSummaries
+response:
+  - name: meetingSummaries
+    type: List
+    elementType: MeetingSummary

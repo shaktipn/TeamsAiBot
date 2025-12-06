@@ -1,0 +1,6 @@
+@TeamsMediaBot_HostAddress = http://localhost:5291
+
+GET {{TeamsMediaBot_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

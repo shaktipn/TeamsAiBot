@@ -1,0 +1,24 @@
+services:
+  postgres:
+    # The `teamsaibot_postgres` container is used for local development.
+    container_name: teamsaibot_postgres
+    image: postgres:17.4
+    ports:
+      - "54355:5432"
+    restart: always
+    environment:
+      POSTGRES_DB: teamsaibot
+      POSTGRES_USER: teamsaibot
+      POSTGRES_PASSWORD: Teamsaibot@1234
+    volumes:
+      - ../init/:/docker-entrypoint-initdb.d/
+      - teamsaibot_postgres_data:/var/lib/teamsaibot/postgresql/data
+      - ./db-data/insert_dummy_data.sql:/var/lib/teamsaibot/postgresql/db-data/insert_dummy_data.sql
+    networks:
+      teamsaibot_network:
+
+volumes:
+  teamsaibot_postgres_data:
+
+networks:
+  teamsaibot_network:
