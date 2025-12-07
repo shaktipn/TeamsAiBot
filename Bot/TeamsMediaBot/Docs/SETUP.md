@@ -68,12 +68,22 @@ Open PowerShell as Administrator and run:
 
 ```powershell
 # Create a self-signed certificate
-$cert = New-SelfSignedCertificate -DnsName "localhost" -CertStoreLocation "cert:\LocalMachine\My" -NotAfter (Get-Date).AddYears(2)
+# Replace localhostwith ServiceFqdn value which is the random ngrok url
+$cert = New-SelfSignedCertificate `
+    -DnsName "localhost" `
+    -CertStoreLocation "cert:\LocalMachine\My" `
+    -Provider "Microsoft RSA SChannel Cryptographic Provider" `
+    -KeySpec KeyExchange `
+    -KeyLength 2048 `
+    -HashAlgorithm sha256 `
+    -KeyExportPolicy Exportable `
+    -NotAfter (Get-Date).AddYears(2)
 
-# Note the thumbprint
-$cert.Thumbprint
+# Confirm the certificate is CSP-backed:
+$cert.PrivateKey.CspKeyContainerInfo.ProviderName
+# It MUST output: Microsoft RSA SChannel Cryptographic Provider
 
-# Export the certificate (optional, for backup)
+# Export Public Certificate (optional)
 Export-Certificate -Cert $cert -FilePath "C:\TeamsMediaBot.cer"
 ```
 
@@ -83,7 +93,7 @@ Export-Certificate -Cert $cert -FilePath "C:\TeamsMediaBot.cer"
 # List all certificates in Local Machine store
 Get-ChildItem -Path cert:\LocalMachine\My
 
-# Find the one you just created and copy the Thumbprint
+# Find the one you just created (last one) and copy the Thumbprint
 ```
 
 ### 2.3 Grant Permissions to the Certificate
@@ -95,12 +105,14 @@ The bot needs permission to use the certificate's private key:
 $thumbprint = "YOUR_CERTIFICATE_THUMBPRINT"
 $cert = Get-ChildItem -Path cert:\LocalMachine\My\$thumbprint
 
-# Get the certificate's private key path
-$rsaCert = [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPrivateKey($cert)
-$path = $rsaCert.Key.UniqueName
+# Get CSP private key container name
+$container = $cert.PrivateKey.CspKeyContainerInfo.KeyContainerName
 
-# Grant permission (replace NETWORK SERVICE with your user if running as user)
-icacls "C:\ProgramData\Microsoft\Crypto\RSA\MachineKeys\$path" /grant "NETWORK SERVICE:RX"
+# Locate actual key file in MachineKeys
+$machineKey = Get-ChildItem "C:\ProgramData\Microsoft\Crypto\RSA\MachineKeys" |
+    Where-Object { $_.Name -like "*$container*" }
+
+icacls $machineKey.FullName /grant "$env:USERNAME:RX"
 ```
 
 ---
@@ -304,17 +316,7 @@ Ensure your Ktor server is running and accessible. The bot expects these endpoin
      }
      ```
 
-2. **Recording Status (Compliance)**
-
-   **Note:** The bot automatically calls Microsoft Graph API directly for recording status updates (compliance requirement). No Ktor endpoint is needed for this.
-
-   **Graph API Endpoint Used:**
-   - `POST https://graph.microsoft.com/v1.0/communications/calls/{id}/updateRecordingStatus`
-   - **Permission Required:** `Calls.AccessMedia.All`
-   - **Called automatically** before answering call (status: "recording") and after call ends (status: "notRecording")
-   - **Reference:** [Microsoft Documentation](https://learn.microsoft.com/en-us/graph/api/call-updaterecordingstatus?view=graph-rest-1.0)
-
-3. **WebSocket Connection**
+2. **WebSocket Connection**
    - **URL**: `ws://localhost:8280/ws/bot?sessionId={sessionId}`
    - **Incoming Messages** (from bot to Ktor):
      ```json
@@ -378,8 +380,7 @@ Open `appsettings.json` and fill in your values:
   "Ktor": {
     "ApiBaseUrl": "http://localhost:8280",
     "WebSocketUrl": "ws://localhost:8280/ws/bot",
-    "SessionInitEndpoint": "/api/sessions/init",
-    "UpdateRecordingStatusEndpoint": "/api/recording/status"
+    "SessionInitEndpoint": "/api/sessions/init"
   },
 
   "Deepgram": {
@@ -727,6 +728,7 @@ Before configuring the bot calling endpoint, it's important to understand where 
 **Important:** When your ngrok HTTP URL changes, you must update:
 - ✅ `BotBaseUrl` and `ServiceFqdn` in `appsettings.json`
 - ✅ `Calling webhook` in Azure Bot Resource
+- ✅ Dns name of the certificate in windows machine
 - ✅ Restart your bot application for changes to take effect
 
 ### 9.1 Update Bot Messaging Endpoint

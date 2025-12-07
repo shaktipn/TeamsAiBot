@@ -345,7 +345,7 @@ BotConfiguration:
 
 KtorConfiguration:
   - ApiBaseUrl, WebSocketUrl
-  - SessionInitEndpoint, UpdateRecordingStatusEndpoint
+  - SessionInitEndpoint
 
 DeepgramConfiguration:
   - ApiKey, Model, Language

@@ -49,8 +49,6 @@ namespace TeamsMediaBot
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine("[TRACE] Program.Main() started");
-            Console.Out.Flush();
             CreateHostBuilder(args).Build().Run();
         }
 

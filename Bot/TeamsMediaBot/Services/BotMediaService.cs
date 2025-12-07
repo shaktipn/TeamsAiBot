@@ -41,9 +41,6 @@ namespace TeamsMediaBot.Services
             IOptions<BotConfiguration> botConfig,
             IConfidentialClientApplication msalClient)
         {
-            Console.WriteLine("[TRACE] BotMediaService constructor started");
-            Console.Out.Flush();
-
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _graphLogger = graphLogger ?? throw new ArgumentNullException(nameof(graphLogger));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
@@ -51,13 +48,11 @@ namespace TeamsMediaBot.Services
             _botConfig = botConfig?.Value ?? throw new ArgumentNullException(nameof(botConfig));
             _msalClient = msalClient ?? throw new ArgumentNullException(nameof(msalClient));
 
-            Console.WriteLine("[TRACE] BotMediaService: About to call InitializeGraphCommunicationsClient");
-            Console.Out.Flush();
+            _logger.LogInformation("Initializing BotMediaService...");
 
             Client = InitializeGraphCommunicationsClient();
 
-            Console.WriteLine("[TRACE] BotMediaService constructor completed");
-            Console.Out.Flush();
+            _logger.LogInformation("BotMediaService initialized successfully.");
         }
 
         /// <summary>

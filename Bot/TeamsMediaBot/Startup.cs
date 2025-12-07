@@ -24,9 +24,6 @@ namespace TeamsMediaBot
         /// <param name="services">Service collection to configure.</param>
         public void ConfigureServices(IServiceCollection services)
         {
-            Console.WriteLine("[TRACE] Startup.ConfigureServices() started");
-            Console.Out.Flush();
-
             // Add MVC controllers
             services.AddControllers();
 
@@ -94,7 +91,7 @@ namespace TeamsMediaBot
         /// </summary>
         /// <param name="app">Application builder.</param>
         /// <param name="env">Web host environment.</param>
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
             if (env.IsDevelopment())
             {
