@@ -84,13 +84,12 @@ class SessionManagerImpl :
             return
         }
         val messageJson = json.encodeToString(message)
-        val frame = Frame.Text(text = messageJson)
         logger.info {
             "Sending $message to ${clients.size} client(s) in session=$sessionId"
         }
         clients.forEach { client ->
             try {
-                client.send(frame = frame)
+                client.send(Frame.Text(text = messageJson))
             } catch (e: Exception) {
                 logger.error(e) {
                     "Failed to send message to client in session=$sessionId: ${e.message}"

@@ -48,6 +48,20 @@ namespace TeamsMediaBot.Services
             _botConfig = botConfig?.Value ?? throw new ArgumentNullException(nameof(botConfig));
             _msalClient = msalClient ?? throw new ArgumentNullException(nameof(msalClient));
 
+            // Check if running on Windows (Media Platform SDK requires Windows)
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var errorMessage =
+                    "ERROR: Microsoft Skype Bots Media Platform SDK - Microsoft.Skype.Bots.Media requires Windows.\n" +
+                    "This bot uses real-time media capabilities that depend on Windows-specific libraries.\n" +
+                    $"Current platform: {RuntimeInformation.OSDescription}\n" +
+                    "The application cannot run on macOS or Linux.\n" +
+                    "Please run this bot on a Windows machine or Windows Server.";
+
+                _logger.LogError(message: errorMessage);
+                Console.Error.WriteLine(errorMessage);
+                Environment.Exit(1);
+            }
             _logger.LogInformation("Initializing BotMediaService...");
 
             Client = InitializeGraphCommunicationsClient();
@@ -65,23 +79,6 @@ namespace TeamsMediaBot.Services
             Console.Out.Flush();
 
             _logger.LogInformation(message: "Initializing Graph Communications Client.");
-
-            // Check if running on Windows (Media Platform SDK requires Windows)
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                var errorMessage =
-                    "ERROR: Microsoft Graph Media Platform SDK requires Windows.\n" +
-                    "This bot uses real-time media capabilities that depend on Windows-specific libraries.\n" +
-                    $"Current platform: {RuntimeInformation.OSDescription}\n" +
-                    "The application cannot run on macOS or Linux.\n" +
-                    "Please run this bot on a Windows machine or Windows Server.";
-
-                _logger.LogError(message: errorMessage);
-                Console.Error.WriteLine(errorMessage);
-
-                // Exit gracefully
-                Environment.Exit(1);
-            }
 
             // Validate configuration
             if (string.IsNullOrWhiteSpace(_azureAdConfig.ClientId))
