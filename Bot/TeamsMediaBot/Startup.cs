@@ -78,6 +78,15 @@ namespace TeamsMediaBot
             // Note: MeetingSessionManager is NOT registered in DI
             // It's created manually by BotMediaService.CreateSessionManager() for each session
 
+            // Register Bot Framework services for messaging
+            services.AddSingleton<Microsoft.Bot.Builder.Integration.AspNet.Core.IBotFrameworkHttpAdapter, TeamsMediaBot.Bot.AdapterWithErrorHandler>();
+            services.AddTransient<Microsoft.Bot.Builder.IBot, TeamsMediaBot.Bot.TeamsBot>();
+
+            // Register command services
+            services.AddTransient<CommandParser>();
+            services.AddTransient<CommandHandlers>();
+            services.AddTransient<MeetingJoinService>();
+
             // Add logging
             services.AddLogging(configure: builder =>
             {

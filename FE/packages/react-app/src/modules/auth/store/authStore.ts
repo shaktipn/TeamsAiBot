@@ -1,5 +1,12 @@
+import { LeoEmailId } from "@surya-digital/leo-ts-types";
+import { SignInWebRPC } from "@teamsaibot/teamsaibot-rpcs/lib/auth/signInWebRPC";
+import { SignInWebRPCClientImpl } from "@teamsaibot/teamsaibot-rpcs/lib/auth/signInWebRPCClientImpl";
+import { SignUpWebRPC } from "@teamsaibot/teamsaibot-rpcs/lib/auth/signUpWebRPC";
+import { SignUpWebRPCClientImpl } from "@teamsaibot/teamsaibot-rpcs/lib/auth/signUpWebRPCClientImpl";
+import { getAPIClient } from "@utils/api";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { logger } from "@/utils/logger";
 import type { AuthState, User } from "./types";
 
 export const useAuthStore = create<AuthState>()(
@@ -9,51 +16,62 @@ export const useAuthStore = create<AuthState>()(
 			isAuthenticated: false,
 			isLoading: false,
 
-			signUp: async (email: string, _password: string, name: string) => {
+			signUp: async (email: string, password: string) => {
 				set({ isLoading: true });
-
 				try {
-					await new Promise((resolve) => setTimeout(resolve, 1000));
-
-					const user: User = {
-						id: crypto.randomUUID(),
-						email,
-						name,
-						createdAt: new Date(),
-					};
-
-					set({
-						user,
-						isAuthenticated: true,
-						isLoading: false,
-					});
+					const apiClient = getAPIClient();
+					const request = new SignUpWebRPC.Request(new LeoEmailId(email), password);
+					const { response, error }: { response?: SignUpWebRPC.Response; error?: SignUpWebRPC.Errors.Errors } =
+						await new SignUpWebRPCClientImpl(apiClient).execute(request);
+					if (response) {
+						const user: User = {
+							id: crypto.randomUUID(),
+							email,
+							createdAt: new Date(),
+						};
+						set({
+							user,
+							isAuthenticated: true,
+							isLoading: false,
+						});
+					} else {
+						throw Error(`${error}`);
+					}
 				} catch (error) {
-					set({ isLoading: false });
+					logger.error("Error when singing up", error);
 					throw error;
+				} finally {
+					set({ isLoading: false });
 				}
 			},
 
-			signIn: async (email: string, _password: string) => {
+			signIn: async (email: string, password: string) => {
 				set({ isLoading: true });
 
 				try {
-					await new Promise((resolve) => setTimeout(resolve, 1000));
+					const apiClient = getAPIClient();
+					const request = new SignInWebRPC.Request(new LeoEmailId(email), password);
+					const { response, error }: { response?: SignInWebRPC.Response; error?: SignInWebRPC.Errors.Errors } =
+						await new SignInWebRPCClientImpl(apiClient).execute(request);
+					if (response) {
+						const user: User = {
+							id: crypto.randomUUID(),
+							email,
+							createdAt: new Date(),
+						};
 
-					const user: User = {
-						id: crypto.randomUUID(),
-						email,
-						name: email.split("@")[0],
-						createdAt: new Date(),
-					};
-
-					set({
-						user,
-						isAuthenticated: true,
-						isLoading: false,
-					});
+						set({
+							user,
+							isAuthenticated: true,
+						});
+					} else {
+						throw Error(`${error}`);
+					}
 				} catch (error) {
-					set({ isLoading: false });
+					logger.error("Error when singing up", error);
 					throw error;
+				} finally {
+					set({ isLoading: false });
 				}
 			},
 

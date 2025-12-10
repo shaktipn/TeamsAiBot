@@ -76,6 +76,11 @@
         /// Endpoint for session initialization.
         /// </summary>
         public string SessionInitEndpoint { get; set; } = "/api/sessions/init";
+
+        /// <summary>
+        /// Server-to-server authentication token for Ktor API calls.
+        /// </summary>
+        public required string S2SToken { get; set; }
     }
 
     /// <summary>

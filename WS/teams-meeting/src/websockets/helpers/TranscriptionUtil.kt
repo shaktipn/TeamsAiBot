@@ -35,4 +35,17 @@ internal object TranscriptionUtil : KoinComponent {
             }
         }
     }
+
+    fun getStructuredAiInput(
+        transcriptChunks: List<String>,
+        previousSummary: String,
+    ): String =
+        buildString {
+            transcriptChunks.forEachIndexed { index, chunk ->
+                appendLine(value = "$index - $chunk")
+            }
+            appendLine()
+            appendLine(value = "Previous Summary:")
+            appendLine(previousSummary)
+        }
 }

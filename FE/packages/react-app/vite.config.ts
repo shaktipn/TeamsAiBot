@@ -19,6 +19,7 @@ export default defineConfig({
 			"@store": path.resolve(__dirname, "./src/store"),
 			"@routes": path.resolve(__dirname, "./src/routes"),
 			"@utils": path.resolve(__dirname, "./src/utils"),
+			"@teamsaibot/teamsaibot-rpcs": path.resolve(__dirname, "../ts-artifacts/"),
 		},
 	},
 });

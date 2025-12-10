@@ -9,6 +9,7 @@ using Microsoft.Graph.Communications.Client;
 using Microsoft.Graph.Communications.Client.Authentication;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Graph.Communications.Resources;
+using Microsoft.Graph.Models;
 using Microsoft.Identity.Client;
 using Microsoft.Skype.Bots.Media;
 using TeamsMediaBot.Configuration;
@@ -285,6 +286,93 @@ namespace TeamsMediaBot.Services
         public int GetActiveSessionCount()
         {
             return _activeSessions.Count;
+        }
+
+        /// <summary>
+        /// Proactively joins a Teams meeting using provided join parameters.
+        /// After calling AddAsync(), the call flows through OnIncomingCallReceived event.
+        /// </summary>
+        /// <remarks>
+        /// Direction is "Outgoing" because the bot initiates the join action via Graph API.
+        /// This is different from answering an incoming call invitation.
+        /// Uses existing permission: Calls.JoinGroupCall.All (already configured in Azure AD)
+        /// </remarks>
+        /// <param name="joinParams">Parameters containing chat info, meeting info, and tenant ID</param>
+        /// <returns>The call ID of the joined meeting</returns>
+        public async Task<string> JoinMeetingAsync(JoinMeetingParameters joinParams)
+        {
+            if (joinParams == null)
+            {
+                throw new ArgumentNullException(nameof(joinParams));
+            }
+
+            _logger.LogInformation(
+                "Bot initiating join to meeting. ThreadId: {ThreadId}",
+                joinParams.ChatInfo.ThreadId);
+
+            try
+            {
+                // Build chat info for the meeting
+                var chatInfo = new ChatInfo
+                {
+                    ThreadId = joinParams.ChatInfo.ThreadId,
+                    MessageId = joinParams.ChatInfo.MessageId,
+                    ReplyChainMessageId = joinParams.ChatInfo.ReplyChainMessageId
+                };
+
+                // Build meeting info - need organizer identity
+                var meetingInfo = new OrganizerMeetingInfo
+                {
+                    Organizer = new IdentitySet
+                    {
+                        User = new Identity
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            DisplayName = "Meeting Organizer"
+                        }
+                    }
+                };
+
+                // Create media session using the Communications Client
+                var audioSettings = new AudioSocketSettings
+                {
+                    StreamDirections = StreamDirection.Recvonly,
+                    SupportedAudioFormat = AudioFormat.Pcm16K
+                };
+
+                var videoSettings = new VideoSocketSettings
+                {
+                    StreamDirections = StreamDirection.Inactive
+                };
+
+                var mediaSession = Client.CreateMediaSession(
+                    audioSocketSettings: audioSettings,
+                    videoSocketSettings: videoSettings);
+
+                // Build the join parameters using required constructor
+                var sdkJoinParams = new Microsoft.Graph.Communications.Calls.JoinMeetingParameters(
+                    chatInfo,
+                    meetingInfo,
+                    mediaSession)
+                {
+                    TenantId = joinParams.TenantId
+                };
+
+                // Join the meeting using the Graph Communications Client
+                // This will trigger OnIncomingCallReceived event with the new call
+                var statefulCall = await Client.Calls().AddAsync(
+                    sdkJoinParams,
+                    scenarioId: Guid.NewGuid());
+
+                _logger.LogInformation("Successfully joined meeting. CallId: {CallId}", statefulCall.Id);
+
+                return statefulCall.Id;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to join meeting proactively");
+                throw;
+            }
         }
     }
 

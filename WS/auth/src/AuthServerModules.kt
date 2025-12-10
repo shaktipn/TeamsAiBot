@@ -1,5 +1,6 @@
 package com.suryadigital.teamsaibot.auth
 
+import com.suryadigital.leo.rpc.ServerToServerAuthenticationValidator
 import com.suryadigital.teamsaibot.auth.queries.CheckUserWithEmailIdExists
 import com.suryadigital.teamsaibot.auth.queries.CheckUserWithEmailIdExistsPostgres
 import com.suryadigital.teamsaibot.auth.queries.GetUserAndWTDetailsByWT
@@ -25,6 +26,7 @@ object AuthServerModules {
             single<SignUpWebRPC> { SignUpWebRPCServerImpl() }
             factory<SignInWebRPC> { (call: ApplicationCall) -> SignInWebRPCServerImpl(call) }
             single<ValidateWTRPC> { ValidateWTRPCServerImpl() }
+            single<ServerToServerAuthenticationValidator> { ServerToServerAuthenticationValidatorImpl() }
         }
 
     private val databaseModule =

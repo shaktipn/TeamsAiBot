@@ -17,3 +17,6 @@ export const PASSWORD_REQUIREMENTS = {
 		"One special character",
 	],
 } as const;
+
+export const LIVE_SUMMARY_ENDPOINT = "ws://localhost:8280/ws/transcription";
+export const API_BASE_URL = "http://localhost:8280";

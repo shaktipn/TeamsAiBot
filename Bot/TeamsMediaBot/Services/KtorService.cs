@@ -81,6 +81,10 @@ namespace TeamsMediaBot.Services
 
             try
             {
+                // Add S2S authentication header
+                _httpClient.DefaultRequestHeaders.Remove("Leo-RPC-S2S-Token");
+                _httpClient.DefaultRequestHeaders.Add("Leo-RPC-S2S-Token", _config.S2SToken);
+
                 var response = await _httpClient.PostAsJsonAsync(
                     requestUri: endpoint,
                     value: requestPayload);
@@ -95,8 +99,9 @@ namespace TeamsMediaBot.Services
                 }
 
                 _logger.LogInformation(
-                    message: "Session initialized successfully. SessionId: {SessionId}",
-                    result.SessionId);
+                    message: "Session initialized successfully. SessionId: {SessionId}, LiveSummaryUrl: {Url}",
+                    result.SessionId,
+                    result.LiveSummaryUrl);
 
                 return result;
             }

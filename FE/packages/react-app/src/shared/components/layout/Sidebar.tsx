@@ -78,12 +78,11 @@ export const Sidebar: React.FC = () => {
 					background: "#002140",
 				}}
 			>
-				<Space direction="vertical" size="small" style={{ width: "100%" }}>
+				<Space orientation="vertical" size="small" style={{ width: "100%" }}>
 					<Space>
 						<Avatar icon={<UserOutlined />} />
 						<div>
-							<Text style={{ color: "white", display: "block", fontSize: 14 }}>{user?.name}</Text>
-							<Text style={{ color: "rgba(255,255,255,0.65)", fontSize: 12 }}>{user?.email}</Text>
+							<Text style={{ color: "white", display: "block", fontSize: 14 }}>{user?.email}</Text>
 						</div>
 					</Space>
 					<Menu theme="dark" mode="inline" style={{ background: "transparent", border: "none" }}>

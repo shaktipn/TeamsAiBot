@@ -38,10 +38,6 @@ export const router = createBrowserRouter([
 	},
 	{
 		path: ROUTES.MEETING_SESSION,
-		element: (
-			<ProtectedRoute>
-				<MeetingSession />
-			</ProtectedRoute>
-		),
+		element: <MeetingSession />,
 	},
 ]);

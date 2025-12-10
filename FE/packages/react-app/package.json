@@ -15,7 +15,9 @@
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
 		"react-router-dom": "^7.10.1",
-		"zustand": "^5.0.9"
+		"zustand": "^5.0.9",
+		"@surya-digital/leo-ts-types": "0.0.53",
+		"@surya-digital/tedwig": "0.0.53"
 	},
 	"devDependencies": {
 		"@types/node": "^24.10.1",

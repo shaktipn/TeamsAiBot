@@ -1,4 +1,4 @@
-import { LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
+import { LockOutlined, MailOutlined } from "@ant-design/icons";
 import { ROUTES } from "@utils/constants";
 import { Button, Form, Input, message } from "antd";
 import { useState } from "react";
@@ -17,9 +17,9 @@ export const SignUp: React.FC = () => {
 
 	const onFinish = async (values: SignUpFormData) => {
 		try {
-			await signUp(values.email, values.password, values.name);
+			await signUp(values.email, values.password);
 			message.success("Account created successfully!");
-			navigate(ROUTES.DASHBOARD);
+			navigate(ROUTES.SIGN_IN);
 		} catch (_error) {
 			message.error("Failed to create account. Please try again.");
 		}
@@ -28,10 +28,6 @@ export const SignUp: React.FC = () => {
 	return (
 		<AuthLayout title="Create Account">
 			<Form form={form} name="signup" onFinish={onFinish} layout="vertical" requiredMark={false}>
-				<Form.Item name="name" label="Full Name" rules={[{ required: true, message: "Please enter your name" }]}>
-					<Input prefix={<UserOutlined />} placeholder="John Doe" size="large" />
-				</Form.Item>
-
 				<Form.Item
 					name="email"
 					label="Email"

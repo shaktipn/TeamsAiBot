@@ -3,6 +3,8 @@ package com.suryadigital.teamsaibot.teamsMeeting
 import com.suryadigital.leo.ktor.metrics.KtorMetrics
 import com.suryadigital.leo.ktor.metrics.Metrics
 import com.suryadigital.teamsaibot.auth.UserIdentity
+import com.suryadigital.teamsaibot.teamsMeeting.queries.GetLatestMeetingSummary
+import com.suryadigital.teamsaibot.teamsMeeting.queries.GetLatestMeetingSummaryPostgres
 import com.suryadigital.teamsaibot.teamsMeeting.queries.GetSessionDetailsBySessionId
 import com.suryadigital.teamsaibot.teamsMeeting.queries.GetSessionDetailsBySessionIdPostgres
 import com.suryadigital.teamsaibot.teamsMeeting.queries.GetUnprocessedTranscripts
@@ -46,6 +48,7 @@ object TeamsMeetingServerModules {
             single<GetUnprocessedTranscripts> { GetUnprocessedTranscriptsPostgres() }
             single<MarkTranscriptsAsProcessed> { MarkTranscriptsAsProcessedPostgres() }
             single<InsertIntoMeetingSummary> { InsertIntoMeetingSummaryPostgres() }
+            single<GetLatestMeetingSummary> { GetLatestMeetingSummaryPostgres() }
         }
 
     private val utilModule =

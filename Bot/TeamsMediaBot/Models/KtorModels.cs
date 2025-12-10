@@ -28,7 +28,7 @@
 
     /// <summary>
     /// Response from Ktor after initializing a bot session.
-    /// Contains the session ID and a URL to send to the meeting chat.
+    /// Contains the session ID and a live summary URL for participants.
     /// </summary>
     public record KtorSessionInitResponse
     {
@@ -38,9 +38,9 @@
         public required string SessionId { get; init; }
 
         /// <summary>
-        /// The URL to send to the meeting chat for participants.
+        /// The live summary URL to send to the meeting chat for participants.
         /// </summary>
-        public required string Url { get; init; }
+        public required string LiveSummaryUrl { get; init; }
     }
 
     /// <summary>

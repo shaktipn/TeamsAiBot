@@ -14,3 +14,4 @@ response:
     type: UUID
   - name: liveSummaryUrl
     type: URL
+requiresAuthentication: SERVER_TO_SERVER

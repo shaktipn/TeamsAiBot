@@ -4,6 +4,7 @@ import com.suryadigital.leo.basedb.Configuration
 import com.suryadigital.leo.basedb.Database
 import com.suryadigital.leo.crypto.Argon2ID13HashVerifier
 import com.suryadigital.leo.crypto.HashVerifier
+import com.suryadigital.leo.ktor.installCORS
 import com.suryadigital.leo.ktor.installStandardFeatures
 import com.suryadigital.leo.ktor.parseConfig
 import com.suryadigital.leo.ktor.standardFeatures.configureJsonCallLogging
@@ -16,14 +17,13 @@ import com.suryadigital.teamsaibot.teamsMeeting.teamsMeetingRoutes
 import com.suryadigital.teamsaibot.teamsMeeting.websockets.webSocketRoutes
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.engine.CommandLineConfig
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.calllogging.CallLoggingConfig
-import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
@@ -62,18 +62,18 @@ internal fun Application.module(testing: Boolean) {
         }
     }
 
-//    installCORS(
-//        hosts = config.getStringList("allowedCorsHosts"),
-//        httpMethod = HttpMethod.DefaultMethods,
-//        httpHeader = listOf("Content-Type"),
-//        allowCredentials = true,
-//    )
+    installCORS(
+        hosts = config.getStringList("allowedCorsHosts"),
+        httpMethod = HttpMethod.DefaultMethods,
+        httpHeader = listOf("Content-Type"),
+        allowCredentials = true,
+    )
 
-    install(CORS) {
-        anyHost()
-        allowHeader(HttpHeaders.Origin)
-        allowHeader(HttpHeaders.AccessControlAllowOrigin)
-    }
+//    install(CORS) {
+//        anyHost()
+//        allowHeader(HttpHeaders.Origin)
+//        allowHeader(HttpHeaders.AccessControlAllowOrigin)
+//    }
 
     installStandardFeatures(callLoggingConfiguration = CallLoggingConfig::configureJsonCallLogging)
 

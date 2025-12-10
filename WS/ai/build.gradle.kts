@@ -16,6 +16,7 @@ tasks.jar {
 
 dependencies {
     implementation("com.openai:openai-java:3.4.1")
+    implementation("com.anthropic:anthropic-java:2.11.1")
     implementation(libs.leo.ktor)
     implementation(libs.leo.inline.logger)
     implementation(libs.leo.basedb)

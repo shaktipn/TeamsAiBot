@@ -10,7 +10,7 @@ export const Dashboard: React.FC = () => {
 
 	return (
 		<DashboardLayout>
-			<Title level={2}>Welcome back, {user?.name}!</Title>
+			<Title level={2}>Welcome back, {user?.email}!</Title>
 			<Paragraph type="secondary">Here's what's happening with your account today.</Paragraph>
 
 			<Row gutter={[16, 16]} style={{ marginTop: 24 }}>

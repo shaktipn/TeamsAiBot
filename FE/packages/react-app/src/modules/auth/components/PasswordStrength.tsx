@@ -39,7 +39,7 @@ export const PasswordStrength: React.FC<PasswordStrengthProps> = ({ password }) 
 	];
 
 	return (
-		<Space direction="vertical" size="small" style={{ width: "100%", marginTop: 8 }}>
+		<Space orientation="vertical" size="small" style={{ width: "100%", marginTop: 8 }}>
 			{requirements.map((req) => (
 				<Text key={req.key} type={req.met ? "success" : "secondary"} style={{ fontSize: 12 }}>
 					{req.met ? <CheckCircleOutlined /> : <CloseCircleOutlined />} {req.label}

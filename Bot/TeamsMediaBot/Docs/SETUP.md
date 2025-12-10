@@ -54,6 +54,8 @@ After registration, note these values (you'll need them later):
    - `Calls.JoinGroupCall.All`
    - `OnlineMeetings.Read.All`
    - `Chat.ReadWrite.All` (for sending messages to chat)
+   - `Calls.JoinGroupCallAsGuest.All`
+   - `Calls.InitiateGroupCall.All`
 6. Click **Grant admin consent for [Your Tenant]**
 
 ---
@@ -68,7 +70,7 @@ Open PowerShell as Administrator and run:
 
 ```powershell
 # Create a self-signed certificate
-# Replace localhostwith ServiceFqdn value which is the random ngrok url
+# Replace localhost with the wildard domain for ServiceFqdn value. For ngrok it will be *.ngrok-free.app
 $cert = New-SelfSignedCertificate `
     -DnsName "localhost" `
     -CertStoreLocation "cert:\LocalMachine\My" `
@@ -130,9 +132,13 @@ Or visit [https://www.whatismyip.com](https://www.whatismyip.com)
 
 **Note**: If you're behind a NAT/firewall, you'll need to configure port forwarding for port 8445 (or your chosen media port).
 
+Use new IPAddress(0x0) / 0.0.0.0 when testing locally.
+
 ---
 
 ## Step 4: ngrok Setup
+
+Follow [official doc](https://microsoftgraph.github.io/microsoft-graph-comms-samples/docs/articles/Testing.html).
 
 ⚠️ **CRITICAL: Two-Tunnel Requirement & Dynamic Port Configuration**
 
@@ -148,7 +154,7 @@ Download from [ngrok.com](https://ngrok.com/download) and follow installation in
 
 ### 4.2 Configure ngrok.yml
 
-Create or edit your `ngrok.yml` configuration file:
+Create or edit a `ngrok.yml` configuration file.
 
 **Location:**
 - **Windows**: `%USERPROFILE%\.ngrok2\ngrok.yml`
@@ -184,6 +190,25 @@ Open a terminal and start both tunnels:
 ngrok start --all
 ```
 
+or 
+
+```yaml
+authtoken: YOUR_NGROK_AUTH_TOKEN
+tunnels:
+  signaling:
+    addr: 9442
+    proto: http
+  media: 
+    addr: 8445
+    proto: tcp
+```
+
+then
+
+```bash
+ngrok start -all -config %replace_with_path_to_your_ngrok.yml%
+```
+
 Or start them individually in separate terminals:
 
 **Terminal 1 - HTTP Signaling:**
@@ -205,8 +230,9 @@ After starting ngrok, you'll see output like this:
 Forwarding   https://abc123.ngrok-free.app -> http://localhost:5000
 ```
 - **Copy the HTTPS URL**: `https://abc123.ngrok-free.app`
-- This will be your **BotBaseUrl** (full URL) in appsettings.json
-- This will be your **ServiceFqdn** (domain only, without `https://`) in appsettings.json
+- This will be your **BotBaseUrl** (full URL) in appsettings.json.
+- Also add your messaging endpoint and calling endpoint in Azure Bot resource as per this + <configured endpoint in the controller>
+- This needs to be a allowed domain in the teams app. (You can use wildcards there.)
 
 **TCP Tunnel (Media):**
 ```
@@ -215,53 +241,49 @@ Forwarding   tcp://0.tcp.ngrok.io:12345 -> localhost:8445
 - **CRITICAL: Note the remote port number**: `12345`
 - This port is **randomly assigned** each time you restart ngrok (with free plan)
 - This will be your **InstancePublicPort** in appsettings.json (Step 7.1)
-- External clients (Microsoft Teams) connect to this remote port for media streaming
+- Teams connects directly to your `ServiceFqdn:InstancePublicPort`
+- Assuming you own a domain - surya.com
+- You need a dns entry for: 0.bot.surya.com → CNAME → 0.tcp.ngrok.io
+- If use use the above then you will need a SSL certificate for *.bot.surya.com (We are using wild card because ngrok can give a different subdomain if restarted)
+- This will be your **ServiceFqdn** (domain only, eg `0.bot.surya.com`) in appsettings.json (Do not use wildcard here)
+
 
 **Example Configuration Mapping:**
 From the output above, you would configure:
 ```json
 "Bot": {
   "BotBaseUrl": "https://abc123.ngrok-free.app",
-  "ServiceFqdn": "abc123.ngrok-free.app",
+  "ServiceFqdn": "0.bot.surya.com",
   "InstancePublicPort": 12345  // ← From TCP tunnel output
 }
 ```
 
 ### 4.5 Understanding ngrok TCP Port Mapping
 
-**How TCP Tunneling Works:**
-
-When you start `ngrok tcp 8445`, ngrok creates a tunnel like this:
-```
-External (Internet)          ngrok Cloud          Your Machine
-    ↓                            ↓                      ↓
-tcp://0.tcp.ngrok.io:12345 → ngrok server → localhost:8445
-```
-
-**Port Terminology:**
-- **Local Port (InstanceInternalPort)**: `8445` - Where your bot listens locally
-- **Remote Port (InstancePublicPort)**: `12345` - Where Teams connects externally
-- These are **different numbers** with ngrok's free plan
-
-**Why This Matters:**
-- Microsoft Teams connects to the **remote port** (`0.tcp.ngrok.io:12345`)
-- ngrok forwards that traffic to your **local port** (`localhost:8445`)
-- Your bot's Media Platform SDK must know the remote port to tell Teams where to connect
-- This is why you configure `InstancePublicPort: 12345` in appsettings.json
-
-**Port Assignment:**
-- With **ngrok free plan**: Remote port is randomly assigned each restart
-- With **ngrok paid plan**: You can reserve a fixed remote port using `remote_addr` in ngrok.yml
-- The local port (8445) always stays the same
-
 **Example Flow:**
 1. You start: `ngrok tcp 8445`
 2. ngrok outputs: `tcp://0.tcp.ngrok.io:12345 -> localhost:8445`
-3. You configure: `InstancePublicPort: 12345` in appsettings.json
-4. Your bot tells Teams: "Connect to me at port 12345"
-5. Teams sends media to: `0.tcp.ngrok.io:12345`
-6. ngrok forwards to: `localhost:8445`
-7. Your bot receives media on port 8445
+3. You configure DNS: `0.bot.surya.com → CNAME → 0.tcp.ngrok.io`
+4. You create certificate for `*.bot.surya.com` with thumbprint ABC123
+5. You configure appsettings.json:
+   - ServiceFqdn: "0.bot.surya.com"
+   - InstancePublicPort: 12345
+   - InstanceInternalPort: 8445
+   - CertificateThumbprint: "ABC123"
+6. Your bot joins meeting via Graph API
+7. Graph API sends call notification to your HTTPS endpoint
+8. Your bot's Media Platform initializes with the settings above
+9. Teams Media Platform needs to establish media connection:
+   - Resolves DNS: 0.bot.surya.com → 0.tcp.ngrok.io → gets IP (e.g., 3.1.2.3)
+   - Connects to: 3.1.2.3:12345
+   - Initiates TLS handshake
+10. Your bot (localhost:8445) receives TLS connection:
+    - Presents certificate for *.bot.surya.com
+    - Teams validates certificate matches ServiceFqdn (0.bot.surya.com) ✓
+11. TLS established → Media streams flow:
+    Teams → 0.tcp.ngrok.io:12345 → ngrok tunnel → localhost:8445 → Your bot
+
+12. Your bot receives audio packets on port 8445
 
 ### 4.6 Important Notes
 
@@ -401,63 +423,18 @@ Open `appsettings.json` and fill in your values:
 - **Bot:InstanceInternalPort**: Local port where bot listens for media (default: 8445)
 - **Bot:InstancePublicPort**: **CRITICAL** - The remote port from ngrok TCP tunnel output in Step 4.4. This changes every time you restart ngrok with free plan. Example: If ngrok shows `tcp://0.tcp.ngrok.io:12345`, set this to `12345`
 - **Bot:CertificateThumbprint**: From Step 2.2
-- **Bot:ServiceFqdn**: Your ngrok domain (without `https://`) from Step 4.4 (e.g., `abc123.ngrok-free.app`)
+- **Bot:ServiceFqdn**: This is the media url eg: 0.bot.surya.com which using the dns cname should go to 0.tcp.ngrok.io
 - **Ktor:ApiBaseUrl**: Your Ktor server URL (update if not localhost)
 - **Ktor:WebSocketUrl**: Your Ktor WebSocket URL (update if not localhost)
 - **Deepgram:ApiKey**: From Step 5
 
 ### 7.3 Understanding Bot Configuration Values
 
-#### **Port Configuration (8445)**
-
-- **`InstanceInternalPort`**: The local port the bot listens on for media traffic (default: 8445)
-- **`InstancePublicPort`**: The external port Teams connects to for media streams (default: 8445)
-
-**Why port 8445?**
-- Conventional port for Microsoft Graph Communications Media Platform
-- Must be open and forwarded through NAT/firewall
-- Used for secure real-time audio streaming (SRTP/DTLS)
-
-**Can I change it?**
-- Yes, but ensure both ports match and are properly configured in your firewall/NAT
-- Common alternatives: 8446, 9000-9100 range
-
-#### **Why Two Different Ports? (Understanding Port Configuration)**
-
-When using ngrok with the free plan, you'll notice two different port numbers:
-- **InstanceInternalPort (8445)**: The local port on your machine
-- **InstancePublicPort (e.g., 12345)**: The external port assigned by ngrok
-
-**Visual Explanation:**
-```
-┌─────────────────┐         ┌──────────────┐         ┌────────────────┐
-│ Microsoft Teams │────────▶│ ngrok Cloud  │────────▶│  Your Machine  │
-│                 │         │              │         │                │
-│ Connects to:    │         │ TCP Tunnel:  │         │ Bot listens on:│
-│ port 12345      │         │ 0.tcp.ngrok  │         │ port 8445      │
-│                 │         │ .io:12345    │         │                │
-└─────────────────┘         └──────────────┘         └────────────────┘
-    (Public Port)              (ngrok maps)          (Internal Port)
-```
-
-**Why This Matters:**
-- **Port 5000**: HTTP endpoint for call notifications/webhooks (separate concern)
-- **Port 8445 (Internal)**: Where your Media Platform SDK listens locally
-- **Port 12345 (Public)**: Where Teams connects for media streaming
-- ngrok bridges the public port to your internal port automatically
-
-**Configuration Requirements:**
-1. Your bot binds to port 5000 for HTTP (signaling)
-2. Your Media Platform SDK binds to port 8445 (internal media)
-3. ngrok exposes port 8445 as a random public port (e.g., 12345)
-4. You tell Teams to connect to the public port via `InstancePublicPort` configuration
-
 #### **ServiceFqdn (Fully Qualified Domain Name)**
 
-- **What it is:** The publicly resolvable hostname for your bot (e.g., `your-ngrok-url.ngrok-free.app`)
-- **Where it's used:** Passed to Microsoft's Media Platform to validate incoming connections
-- **Format:** Domain only, WITHOUT `https://` prefix
-- **Example:** If your ngrok URL is `https://abc123.ngrok-free.app`, set ServiceFqdn to `abc123.ngrok-free.app`
+- **What it is:** The publicly resolvable hostname to send media for your bot
+- **Where it's used:** Passed to Microsoft's Media Platform to get media.
+- **Format:** Domain only, WITHOUT `https://` / `tcp://` prefix
 
 **Why is it needed?**
 - The Media Platform uses this for DNS validation
@@ -572,132 +549,6 @@ Once approved, the app will be available in your Teams apps catalog.
 
 ---
 
-### Method 2: Manual Manifest Creation (Alternative)
-
-If you prefer manual control or need to automate deployment, you can create the manifest manually.
-
-#### 8.1 Create manifest.json
-
-Create a `manifest.json` file with the following content:
-
-```json
-{
-  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
-  "manifestVersion": "1.16",
-  "version": "1.0.0",
-  "id": "YOUR_APP_CLIENT_ID",
-  "packageName": "com.yourcompany.teamsmediabot",
-  "developer": {
-    "name": "Your Company",
-    "websiteUrl": "https://yourcompany.com",
-    "privacyUrl": "https://yourcompany.com/privacy",
-    "termsOfUseUrl": "https://yourcompany.com/terms"
-  },
-  "name": {
-    "short": "Media Bot",
-    "full": "Teams Media Bot"
-  },
-  "description": {
-    "short": "A bot that transcribes meetings",
-    "full": "A bot that joins Teams meetings and provides real-time transcription"
-  },
-  "icons": {
-    "outline": "outline.png",
-    "color": "color.png"
-  },
-  "accentColor": "#FFFFFF",
-  "bots": [
-    {
-      "botId": "YOUR_APP_CLIENT_ID",
-      "scopes": [
-        "team",
-        "groupchat"
-      ],
-      "supportsFiles": false,
-      "isNotificationOnly": false,
-      "supportsCalling": true,
-      "supportsVideo": true
-    }
-  ],
-  "permissions": [
-    "identity",
-    "messageTeamMembers"
-  ],
-  "validDomains": [
-    "your-ngrok-url.ngrok-free.app"
-  ],
-  "webApplicationInfo": {
-    "id": "YOUR_APP_CLIENT_ID",
-    "resource": "https://RscPermission"
-  }
-}
-```
-
-**Important:** Replace `YOUR_APP_CLIENT_ID` with your **Azure AD App Registration Client ID** from Step 1.2. This same ID is used for:
-- `id` (app identifier)
-- `botId` (bot identifier)
-- `webApplicationInfo.id` (for RSC permissions)
-
-**Why are they the same?** The bot IS the Azure AD application, so they share the same Client ID.
-
----
-
-### ⚠️ Common Confusion: Bot ID vs Azure Bot Resource
-
-**Question:** "If the bot ID is the app registration ID, why do we need to create an Azure Bot resource in Azure Portal?"
-
-**Answer:**
-- **Bot ID in manifest** = Your **Azure AD App Registration ID** (from Step 1)
-- **Azure Bot Resource** = A separate configuration resource in Azure Portal
-
-**The Azure Bot Resource serves these purposes:**
-1. **Channels Configuration**: Links your bot to Teams, Slack, Web Chat, etc.
-2. **Messaging Endpoint**: Configures where Teams sends call notifications (`https://your-bot-url/api/calls`)
-3. **Bot Management**: Provides analytics, testing tools, and configuration UI
-4. **Bridge Between Teams and Your App**: Links your Azure AD app to Teams platform
-
-**They work together:**
-```
-Azure AD App Registration (Step 1)
-    ↓ (provides authentication)
-Azure Bot Resource (Step 9)
-    ↓ (provides messaging/calling endpoint)
-Teams App Manifest (Step 8)
-    ↓ (uses App Registration ID as botId)
-Your Bot Code
-```
-
-**Key Point:** Yes, the `botId` in the manifest is **NOT** the Azure Bot Resource ID - it's your **Azure AD App Registration Client ID**. The Azure Bot Resource is just a configuration layer that connects everything together.
-
----
-
-#### 8.2 Create Icons
-
-Create two icon files:
-- **`outline.png`**: 32x32 pixels, transparent background, white outline
-- **`color.png`**: 192x192 pixels, full color logo
-
-#### 8.3 Create App Package
-
-1. Create a ZIP file containing:
-   - `manifest.json`
-   - `outline.png`
-   - `color.png`
-2. Name it `TeamsMediaBot.zip`
-
-**Note:** Do NOT create a folder inside the ZIP - the three files should be at the root level.
-
-#### 8.4 Upload to Teams
-
-1. Open Microsoft Teams
-2. Go to **Apps**
-3. Click **Manage your apps** (bottom left)
-4. Click **Upload an app** > **Upload a custom app**
-5. Select your `TeamsMediaBot.zip` file
-6. Click **Add**
-
----
-
 ## Step 9: Register the Bot Calling Endpoint
 
 ### Understanding Configuration Locations
@@ -728,16 +579,16 @@ Before configuring the bot calling endpoint, it's important to understand where 
 **Important:** When your ngrok HTTP URL changes, you must update:
 - ✅ `BotBaseUrl` and `ServiceFqdn` in `appsettings.json`
 - ✅ `Calling webhook` in Azure Bot Resource
-- ✅ Dns name of the certificate in windows machine
+- ✅ Dns name of the certificate in windows machine unless it uses a wildcard certificate.
 - ✅ Restart your bot application for changes to take effect
 
-### 9.1 Update Bot Messaging Endpoint
+### 9.1 Update Bot Messaging Endpoint and Calling Endpoint
 
 1. Go to [Azure Portal](https://portal.azure.com)
-2. Navigate to **Azure Bot** (create one if you haven't)
-3. Go to **Configuration**
-4. Set **Messaging endpoint**: `https://your-ngrok-url.ngrok-free.app/api/calls`
-5. Set **Calling webhook**: `https://your-ngrok-url.ngrok-free.app/api/calls`
+2. Navigate to **Azure Bot** (create one if you haven't by using the existing app Id from app registration)
+3. Add Teams meeting channel.
+4. Set **Messaging endpoint**: `https://your-ngrok-url.ngrok-free.app/api/messages` in Configuration tab.
+5. Set **Calling webhook**: `https://your-ngrok-url.ngrok-free.app/api/calls` in the teams chanel.
 6. Save changes
 
 **Note:** Replace `your-ngrok-url.ngrok-free.app` with your actual ngrok HTTP tunnel URL from Step 4.4. This should match the `BotBaseUrl` you configured in `appsettings.json`.
@@ -782,35 +633,6 @@ You should see:
   "timestamp": "2024-01-01T00:00:00Z"
 }
 ```
-
----
-
-## Step 11: Test the Bot
-
-### 11.1 Upload the App to Teams
-
-1. Open Microsoft Teams
-2. Go to **Apps**
-3. Click **Manage your apps**
-4. Click **Upload an app** > **Upload a custom app**
-5. Select your `TeamsMediaBot.zip` file
-6. Click **Add**
-
-### 11.2 Add the Bot to a Meeting
-
-1. Schedule a Teams meeting
-2. In the meeting options, add the bot as a participant
-3. Start the meeting
-4. The bot should automatically join when the meeting starts
-
-### 11.3 Monitor the Logs
-
-Watch the console output of your running bot. You should see:
-- Call received notifications
-- Session initialization
-- Deepgram connection
-- Transcript events
-- Live summaries from Ktor
 
 ---
 

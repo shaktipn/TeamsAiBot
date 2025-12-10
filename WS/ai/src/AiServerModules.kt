@@ -1,6 +1,6 @@
 package com.suryadigital.teamsaibot.ai
 
-import com.suryadigital.teamsaibot.ai.openai.OpenAiService
+import com.suryadigital.teamsaibot.ai.anthropic.AnthropicAiService
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -10,7 +10,7 @@ import org.koin.dsl.module
 object AiServerModules {
     private val utilModule =
         module {
-            single<AiService> { OpenAiService() }
+            single<AiService> { AnthropicAiService() }
         }
 
     /**

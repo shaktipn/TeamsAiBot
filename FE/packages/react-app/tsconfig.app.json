@@ -24,7 +24,8 @@
 			"@shared/*": ["./src/shared/*"],
 			"@store/*": ["./src/store/*"],
 			"@routes/*": ["./src/routes/*"],
-			"@utils/*": ["./src/utils/*"]
+			"@utils/*": ["./src/utils/*"],
+			"@teamsaibot/teamsaibot-rpcs/*": ["../ts-artifacts/*"]
 		},
 
 		/* Linting */
@@ -35,5 +36,5 @@
 		"noFallthroughCasesInSwitch": true,
 		"noUncheckedSideEffectImports": true
 	},
-	"include": ["src"]
+	"include": ["src", "./../ts-artifacts"]
 }

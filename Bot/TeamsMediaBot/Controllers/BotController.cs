@@ -14,13 +14,19 @@ namespace TeamsMediaBot.Controllers
     public class BotController : ControllerBase
     {
         private readonly BotMediaService _botMediaService;
+        private readonly Microsoft.Bot.Builder.Integration.AspNet.Core.IBotFrameworkHttpAdapter _adapter;
+        private readonly Microsoft.Bot.Builder.IBot _bot;
         private readonly ILogger<BotController> _logger;
 
         public BotController(
             BotMediaService botMediaService,
+            Microsoft.Bot.Builder.Integration.AspNet.Core.IBotFrameworkHttpAdapter adapter,
+            Microsoft.Bot.Builder.IBot bot,
             ILogger<BotController> logger)
         {
             _botMediaService = botMediaService ?? throw new ArgumentNullException(nameof(botMediaService));
+            _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
+            _bot = bot ?? throw new ArgumentNullException(nameof(bot));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -56,6 +62,33 @@ namespace TeamsMediaBot.Controllers
 
                 // Return 202 even on error to prevent Teams from retrying
                 return Accepted();
+            }
+        }
+
+        /// <summary>
+        /// Bot Framework messaging endpoint.
+        /// Handles Teams messages, mentions, and commands.
+        /// </summary>
+        /// <returns>HTTP 200 OK when message is processed.</returns>
+        [HttpPost]
+        [Route("messages")]
+        public async Task<IActionResult> HandleMessagesAsync()
+        {
+            _logger.LogInformation("Received message activity from Teams");
+
+            try
+            {
+                // Process the incoming activity using Bot Framework
+                // The adapter handles JWT validation, deserializes Activity objects,
+                // and routes to TeamsBot.OnMessageActivityAsync()
+                await _adapter.ProcessAsync(Request, Response, _bot);
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing message activity");
+                return StatusCode(500);
             }
         }
 

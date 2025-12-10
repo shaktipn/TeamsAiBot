@@ -4,10 +4,12 @@ import com.suryadigital.leo.basedb.Database
 import com.suryadigital.leo.basedb.timedQuery
 import com.suryadigital.leo.inlineLogger.getInlineLogger
 import com.suryadigital.teamsaibot.ai.AiService
+import com.suryadigital.teamsaibot.teamsMeeting.queries.GetLatestMeetingSummary
 import com.suryadigital.teamsaibot.teamsMeeting.queries.GetUnprocessedTranscripts
 import com.suryadigital.teamsaibot.teamsMeeting.queries.InsertIntoMeetingSummary
 import com.suryadigital.teamsaibot.teamsMeeting.queries.MarkTranscriptsAsProcessed
 import com.suryadigital.teamsaibot.teamsMeeting.websockets.dto.OutgoingMessage
+import com.suryadigital.teamsaibot.teamsMeeting.websockets.helpers.TranscriptionUtil
 import com.suryadigital.teamsaibot.teamsMeeting.websockets.manager.SessionManager
 import com.suryadigital.teamsaibot.teamsMeeting.websockets.manager.SummaryGenerationService
 import kotlinx.coroutines.CoroutineScope
@@ -41,6 +43,7 @@ internal class SummaryGenerationServiceImpl(
     private val getUnprocessedTranscripts by inject<GetUnprocessedTranscripts>()
     private val markTranscriptsAsProcessed by inject<MarkTranscriptsAsProcessed>()
     private val insertIntoMeetingSummary by inject<InsertIntoMeetingSummary>()
+    private val getLatestMeetingSummary by inject<GetLatestMeetingSummary>()
 
     private val activeJobs = ConcurrentHashMap<UUID, Job>()
 
@@ -49,7 +52,6 @@ internal class SummaryGenerationServiceImpl(
     }
 
     override suspend fun startSummaryGeneration(sessionId: UUID) {
-        // Check if already running
         if (activeJobs.containsKey(sessionId)) {
             logger.warn { "Summary generation already active for session=$sessionId" }
             return
@@ -106,11 +108,27 @@ internal class SummaryGenerationServiceImpl(
             return
         }
         logger.info { "Processing ${transcripts.size} unprocessed transcripts for session=$sessionId" }
-        // Step 3: Concatenate transcript texts
-        val concatenatedText = transcripts.joinToString(separator = "\n", transform = GetUnprocessedTranscripts.Result::text)
-        val summary =
+
+        val previousSummary =
+            database.timedQuery { ctx ->
+                getLatestMeetingSummary
+                    .execute(
+                        ctx = ctx,
+                        input =
+                            GetLatestMeetingSummary.Input(
+                                sessionId = sessionId,
+                            ),
+                    )?.summary
+            }
+        val updatedSummary =
             try {
-                aiService.getText(input = concatenatedText)
+                aiService.getAiReply(
+                    input =
+                        TranscriptionUtil.getStructuredAiInput(
+                            transcriptChunks = transcripts.map(GetUnprocessedTranscripts.Result::text),
+                            previousSummary = previousSummary ?: "",
+                        ),
+                )
             } catch (e: Exception) {
                 logger.error(e) { "AI service failed for session=$sessionId: ${e.message}" }
                 throw e
@@ -122,7 +140,7 @@ internal class SummaryGenerationServiceImpl(
                 message =
                     OutgoingMessage.LiveSummary(
                         sessionId = "$sessionId",
-                        summary = summary,
+                        summary = updatedSummary,
                     ),
             )
         } catch (e: Exception) {
@@ -137,7 +155,7 @@ internal class SummaryGenerationServiceImpl(
                 input =
                     InsertIntoMeetingSummary.Input(
                         sessionId = sessionId,
-                        summary = summary,
+                        summary = updatedSummary,
                         createdBy = null, // System-generated
                     ),
             )

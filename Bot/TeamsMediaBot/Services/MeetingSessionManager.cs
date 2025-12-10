@@ -132,9 +132,9 @@ namespace TeamsMediaBot.Services
 
                 _logger.LogInformation(message: "Call answered successfully. CallId: {CallId}", call.Id);
 
-                // Step 6: Send the URL to the meeting chat
+                // Step 6: Send the live summary URL to the meeting chat
                 await SendUrlToMeetingChatAsync(
-                    url: sessionInfo.Url,
+                    url: sessionInfo.LiveSummaryUrl,
                     call: call);
 
                 // Step 7: Subscribe to call state changes for cleanup
