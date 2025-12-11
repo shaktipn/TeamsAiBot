@@ -70,7 +70,7 @@ Open PowerShell as Administrator and run:
 
 ```powershell
 # Create a self-signed certificate
-# Replace localhost with the wildard domain for ServiceFqdn value. For ngrok it will be *.ngrok-free.app
+# Replace localhost with the wildard domain for ServiceFqdn value. For ngrok it will be *.subdomain.yr-owned-domain that maps to the tcp host for ngork in dns
 $cert = New-SelfSignedCertificate `
     -DnsName "localhost" `
     -CertStoreLocation "cert:\LocalMachine\My" `
@@ -95,7 +95,7 @@ Export-Certificate -Cert $cert -FilePath "C:\TeamsMediaBot.cer"
 # List all certificates in Local Machine store
 Get-ChildItem -Path cert:\LocalMachine\My
 
-# Find the one you just created (last one) and copy the Thumbprint
+# Find the one you just created (subject should be the domain) and copy the Thumbprint
 ```
 
 ### 2.3 Grant Permissions to the Certificate
@@ -114,7 +114,88 @@ $container = $cert.PrivateKey.CspKeyContainerInfo.KeyContainerName
 $machineKey = Get-ChildItem "C:\ProgramData\Microsoft\Crypto\RSA\MachineKeys" |
     Where-Object { $_.Name -like "*$container*" }
 
-icacls $machineKey.FullName /grant "$env:USERNAME:RX"
+# Get your user name by:
+$env:USERNAME
+
+icacls $machineKey.FullName /grant "<replace-with-your-username>:RX"
+```
+
+Full script:
+```
+# ============================================
+# Step 1: Create Certificate (CSP Provider)
+# ============================================
+
+$cert = New-SelfSignedCertificate `
+    -DnsName "*.share.surya-digital.in", "share.surya-digital.in" `
+    -CertStoreLocation "cert:\LocalMachine\My" `
+    -Provider "Microsoft RSA SChannel Cryptographic Provider" `
+    -KeySpec KeyExchange `
+    -KeyLength 2048 `
+    -HashAlgorithm sha256 `
+    -KeyExportPolicy Exportable `
+    -NotAfter (Get-Date).AddYears(2)
+
+Write-Host "Certificate Thumbprint: $($cert.Thumbprint)" -ForegroundColor Green
+
+# ============================================
+# Step 2: Verify CSP Provider (CRITICAL!)
+# ============================================
+
+$providerName = $cert.PrivateKey.CspKeyContainerInfo.ProviderName
+
+# ============================================
+# Step 3: Export Certificate (Optional)
+# ============================================
+
+Export-Certificate -Cert $cert -FilePath "C:\surya-bot-cert.cer"
+Write-Host "Certificate exported to: C:\surya-bot-cert.cer"
+
+# ============================================
+# Step 4: Grant Permissions to Private Key
+# ============================================
+
+$thumbprint = $cert.Thumbprint
+$container = $cert.PrivateKey.CspKeyContainerInfo.KeyContainerName
+
+# Find the actual key file
+$machineKeyPath = "C:\ProgramData\Microsoft\Crypto\RSA\MachineKeys"
+$machineKey = Get-ChildItem $machineKeyPath | 
+    Where-Object { $_.Name -like "*$container*" }
+
+if ($machineKey) {
+    # Grant read/execute permissions to current user
+    icacls $machineKey.FullName /grant "${env:USERNAME}:RX"
+    Write-Host "✓ Permissions granted to private key" -ForegroundColor Green
+} else {
+    Write-Host "✗ Could not find private key file" -ForegroundColor Red
+}
+
+# ============================================
+# Step 5: Install to Trusted Root (For Testing)
+# ============================================
+
+# This makes Windows trust your self-signed cert
+$rootStore = Get-Item "Cert:\LocalMachine\Root"
+$rootStore.Open("ReadWrite")
+$rootStore.Add($cert)
+$rootStore.Close()
+
+Write-Host "✓ Certificate installed to Trusted Root" -ForegroundColor Green
+
+# ============================================
+# Step 6: Display Summary
+# ============================================
+
+Write-Host "`n========================================" -ForegroundColor Cyan
+Write-Host "Certificate Setup Complete!" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "Thumbprint: $($cert.Thumbprint)"
+Write-Host "Subject: $($cert.Subject)"
+Write-Host "Valid Until: $($cert.NotAfter)"
+Write-Host "Provider: $providerName"
+Write-Host "`nAdd this to appsettings.json:"
+Write-Host "  `"CertificateThumbprint`": `"$($cert.Thumbprint)`"" -ForegroundColor Yellow
 ```
 
 ---
@@ -156,9 +237,6 @@ Download from [ngrok.com](https://ngrok.com/download) and follow installation in
 
 Create or edit a `ngrok.yml` configuration file.
 
-**Location:**
-- **Windows**: `%USERPROFILE%\.ngrok2\ngrok.yml`
-- **macOS/Linux**: `~/.ngrok2/ngrok.yml`
 
 **Configuration:**
 ```yaml
@@ -193,6 +271,7 @@ ngrok start --all
 or 
 
 ```yaml
+version: "2"
 authtoken: YOUR_NGROK_AUTH_TOKEN
 tunnels:
   signaling:
@@ -206,7 +285,7 @@ tunnels:
 then
 
 ```bash
-ngrok start -all -config %replace_with_path_to_your_ngrok.yml%
+ngrok start --all --config .\ngrok-config.yml
 ```
 
 Or start them individually in separate terminals:
@@ -243,7 +322,7 @@ Forwarding   tcp://0.tcp.ngrok.io:12345 -> localhost:8445
 - This will be your **InstancePublicPort** in appsettings.json (Step 7.1)
 - Teams connects directly to your `ServiceFqdn:InstancePublicPort`
 - Assuming you own a domain - surya.com
-- You need a dns entry for: 0.bot.surya.com → CNAME → 0.tcp.ngrok.io
+- You need a dns entry for: 0.bot.surya.com → CNAME → 0.tcp.in.ngrok.io
 - If use use the above then you will need a SSL certificate for *.bot.surya.com (We are using wild card because ngrok can give a different subdomain if restarted)
 - This will be your **ServiceFqdn** (domain only, eg `0.bot.surya.com`) in appsettings.json (Do not use wildcard here)
 
@@ -391,18 +470,18 @@ Open `appsettings.json` and fill in your values:
   },
 
   "Bot": {
-    "BotBaseUrl": "https://your-ngrok-url.ngrok-free.app",
-    "PublicIpAddress": "YOUR_PUBLIC_IP_ADDRESS",
+    "BotBaseUrl": "https://bradley-interconciliary-unconvolutely.ngrok-free.dev",
+    "PublicIpAddress": "0.0.0.0",
     "InstanceInternalPort": 8445,
-    "InstancePublicPort": 12345,  // ← UPDATE THIS with ngrok TCP remote port from Step 4.4
+    "InstancePublicPort": 13386,  // ← UPDATE THIS with ngrok TCP remote port from Step 4.4
     "CertificateThumbprint": "YOUR_CERTIFICATE_THUMBPRINT",
     "ServiceFqdn": "your-ngrok-url.ngrok-free.app"
   },
 
   "Ktor": {
-    "ApiBaseUrl": "http://localhost:8280",
-    "WebSocketUrl": "ws://localhost:8280/ws/bot",
-    "SessionInitEndpoint": "/api/sessions/init"
+    "ApiBaseUrl": "https://1dc092e79445.ngrok-free.app",
+    "WebSocketUrl": "wss://1dc092e79445.ngrok-free.app/ws/transcription",
+    "SessionInitEndpoint": "/teams-meeting/CreateMeetingSession"
   },
 
   "Deepgram": {
@@ -423,7 +502,7 @@ Open `appsettings.json` and fill in your values:
 - **Bot:InstanceInternalPort**: Local port where bot listens for media (default: 8445)
 - **Bot:InstancePublicPort**: **CRITICAL** - The remote port from ngrok TCP tunnel output in Step 4.4. This changes every time you restart ngrok with free plan. Example: If ngrok shows `tcp://0.tcp.ngrok.io:12345`, set this to `12345`
 - **Bot:CertificateThumbprint**: From Step 2.2
-- **Bot:ServiceFqdn**: This is the media url eg: 0.bot.surya.com which using the dns cname should go to 0.tcp.ngrok.io
+- **Bot:ServiceFqdn**: This is the media url eg: 0.bot.surya.com which using the dns cname should go to 0.tcp.in.ngrok.io
 - **Ktor:ApiBaseUrl**: Your Ktor server URL (update if not localhost)
 - **Ktor:WebSocketUrl**: Your Ktor WebSocket URL (update if not localhost)
 - **Deepgram:ApiKey**: From Step 5

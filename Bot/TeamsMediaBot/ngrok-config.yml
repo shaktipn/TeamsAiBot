@@ -1,0 +1,9 @@
+version: "2"
+authtoken: <AUTH_TOKEN_NGROK>
+tunnels:
+  signaling:
+    addr: 5000
+    proto: http
+  media: 
+    addr: 8445
+    proto: tcp

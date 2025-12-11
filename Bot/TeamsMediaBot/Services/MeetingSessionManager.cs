@@ -212,7 +212,7 @@ namespace TeamsMediaBot.Services
                 {
                     return;
                 }
-
+                _logger.LogInformation("Received audio from teams", e.ToString());
                 // Convert audio buffer to byte array
                 long length = e.Buffer.Length;
                 byte[] audioData = new byte[length];

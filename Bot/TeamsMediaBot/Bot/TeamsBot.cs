@@ -42,6 +42,7 @@ namespace TeamsMediaBot.Bot
         {
             try
             {
+                _logger.LogInformation("Received command: {turnContext}", turnContext);
                 // Extract the command text (removes mention tags if present)
                 var commandText = GetCommandText(turnContext.Activity);
 
@@ -89,18 +90,8 @@ namespace TeamsMediaBot.Bot
                 // Don't greet ourselves
                 if (member.Id != turnContext.Activity.Recipient.Id)
                 {
-                    var welcomeMessage = @"👋 Hello! I'm *Surya AI Bot*.
-
-I can join Teams meetings and provide live transcriptions with speaker identification.
-
-_Quick Start:_
-• Type `/join <meeting_url>` to join a meeting
-• Type `/help` to see all commands
-
-Let me know if you need any assistance!";
-
                     await turnContext.SendActivityAsync(
-                        MessageFactory.Text(welcomeMessage),
+                        MessageFactory.Text(BotMessages.WelcomeMessage),
                         cancellationToken);
                 }
             }

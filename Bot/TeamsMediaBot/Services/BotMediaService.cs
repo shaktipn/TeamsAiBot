@@ -145,6 +145,7 @@ namespace TeamsMediaBot.Services
             clientBuilder.SetAuthenticationProvider(authenticationProvider: authProvider);
             clientBuilder.SetServiceBaseUrl(serviceBaseUrlInput: new Uri(_botConfig.BotBaseUrl));
             clientBuilder.SetMediaPlatformSettings(mediaSettings: mediaPlatformSettings);
+            clientBuilder.SetNotificationUrl(notificationUrlInput: new Uri($"{_botConfig.BotBaseUrl}/api/calls"));
 
             var client = clientBuilder.Build();
 

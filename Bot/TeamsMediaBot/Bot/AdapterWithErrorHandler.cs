@@ -19,12 +19,20 @@ namespace TeamsMediaBot.Bot
         {
             OnTurnError = async (turnContext, exception) =>
             {
-                // Log the exception
-                logger.LogError(exception, "Error processing turn");
+                // Log the exception with full details
+                logger.LogError(exception, "Error processing turn: {ErrorMessage}", exception.Message);
 
                 // Send a friendly error message to the user
-                await turnContext.SendActivityAsync(
-                    "❌ Sorry, something went wrong. Please try again or type `/help` for assistance.");
+                try
+                {
+                    await turnContext.SendActivityAsync(
+                        "❌ Sorry, something went wrong. Please try again or type `/help` for assistance.");
+                }
+                catch (Exception sendEx)
+                {
+                    // If we can't even send an error message, log it
+                    logger.LogError(sendEx, "Failed to send error message to user");
+                }
             };
         }
     }

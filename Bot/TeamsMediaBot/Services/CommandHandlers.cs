@@ -35,7 +35,7 @@
                 // Validate that URL was provided
                 if (string.IsNullOrWhiteSpace(command.MeetingUrl))
                 {
-                    return "Please provide a meeting URL. Usage: `join <meeting_url>`";
+                    return Bot.BotMessages.JoinUsageMessage;
                 }
 
                 _logger.LogInformation("Handling join command for URL: {Url}", command.MeetingUrl);
@@ -113,11 +113,7 @@
         /// <returns>Greeting response</returns>
         public string HandleGreetingCommand()
         {
-            return @"👋 Hi! I'm **Surya AI Bot**.
-
-I can join Teams meetings and provide live transcriptions with speaker identification.
-
-Type `/help` to see what I can do!";
+            return Bot.BotMessages.WelcomeMessage;
         }
 
         /// <summary>
