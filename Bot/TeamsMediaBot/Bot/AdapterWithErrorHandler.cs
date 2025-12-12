@@ -17,6 +17,11 @@ namespace TeamsMediaBot.Bot
             ILogger<BotFrameworkHttpAdapter> logger)
             : base(configuration, logger)
         {
+            var appId = configuration["MicrosoftAppId"];
+            var appPass = configuration["MicrosoftAppPassword"];
+            logger.LogWarning($"Bot AppId: {appId}");
+            logger.LogWarning($"Bot Password exists: {!string.IsNullOrEmpty(appPass)}");
+            logger.LogWarning($"Bot Password length: {appPass?.Length ?? 0}");
             OnTurnError = async (turnContext, exception) =>
             {
                 // Log the exception with full details

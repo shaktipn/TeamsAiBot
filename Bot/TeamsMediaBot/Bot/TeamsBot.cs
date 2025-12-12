@@ -64,8 +64,8 @@ namespace TeamsMediaBot.Bot
 
                 // Send response back to Teams
                 await turnContext.SendActivityAsync(
-                    MessageFactory.Text(response),
-                    cancellationToken);
+                    textReplyToSend: response.ToString(),
+                    cancellationToken: cancellationToken);
             }
             catch (Exception ex)
             {

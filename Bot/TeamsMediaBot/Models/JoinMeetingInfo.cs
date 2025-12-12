@@ -5,45 +5,36 @@
     /// </summary>
     public record JoinMeetingInfo
     {
-        public required ChatInfo ChatInfo { get; init; }
-        public required MeetingInfo MeetingInfo { get; init; }
-    }
-
-    /// <summary>
-    /// Chat information extracted from meeting URL.
-    /// </summary>
-    public record ChatInfo
-    {
         /// <summary>
-        /// The Teams thread ID for the meeting.
+        /// The unique identifier of the meeting thread.
         /// </summary>
         public required string ThreadId { get; init; }
 
         /// <summary>
-        /// The message ID within the thread.
+        /// The unique identifier of the meeting message.
         /// </summary>
         public required string MessageId { get; init; }
 
         /// <summary>
-        /// Optional reply chain message ID.
+        /// The Azure Active Directory tenant identifier associated with the meeting.
         /// </summary>
-        public string? ReplyChainMessageId { get; init; }
-    }
+        public required string TenantId { get; init; }
 
-    /// <summary>
-    /// Meeting information for Graph API call.
-    /// </summary>
-    public record MeetingInfo
-    {
         /// <summary>
-        /// Whether the bot can join without the meeting organizer present.
+        /// The identifier of the meeting organizer.
         /// </summary>
-        public string? AllowConversationWithoutHost { get; init; }
+        public required string OrganizerId { get; init; }
+
+        /// <summary>
+        /// The identifier of the reply chain message, when present. May be null.
+        /// </summary>
+        public required string? ReplyChainMessageId { get; init; }
     }
 
     /// <summary>
     /// Context information parsed from meeting URL query parameters.
-    /// Used internally for parsing meeting URLs.
+    /// Contains tenant and organizer information required for meeting join.
+    /// All fields are required and must be present in the meeting URL.
     /// </summary>
     public record JoinContext
     {
@@ -61,5 +52,15 @@
         /// Message ID from the meeting invitation.
         /// </summary>
         public required string MessageId { get; init; }
+
+        /// <summary>
+        /// Convenience property for accessing Tenant ID.
+        /// </summary>
+        public string TenantId => Tid;
+
+        /// <summary>
+        /// Convenience property for accessing Organizer ID.
+        /// </summary>
+        public string OrganizerId => Oid;
     }
 }

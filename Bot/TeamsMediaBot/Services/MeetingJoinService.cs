@@ -38,8 +38,8 @@ namespace TeamsMediaBot.Services
                 try
                 {
                     joinInfo = JoinUrlParser.ParseJoinUrl(meetingUrl);
-                    _logger.LogInformation("Successfully parsed meeting URL. ThreadId: {ThreadId}",
-                        joinInfo.ChatInfo.ThreadId);
+                    _logger.LogInformation("Successfully parsed meeting URL. Details: {details}",
+                        joinInfo.ToString());
                 }
                 catch (ArgumentException ex)
                 {
@@ -51,16 +51,8 @@ namespace TeamsMediaBot.Services
                     };
                 }
 
-                // Step 2: Build join parameters
-                var joinParams = new JoinMeetingParameters
-                {
-                    ChatInfo = joinInfo.ChatInfo,
-                    MeetingInfo = joinInfo.MeetingInfo,
-                    TenantId = tenantId
-                };
-
-                // Step 3: Call BotMediaService to join the meeting
-                var callId = await _botMediaService.JoinMeetingAsync(joinParams);
+                // Step 2: Call BotMediaService to join the meeting
+                var callId = await _botMediaService.JoinMeetingAsync(joinInfo);
 
                 _logger.LogInformation("Successfully joined meeting. CallId: {CallId}", callId);
 
@@ -101,26 +93,5 @@ namespace TeamsMediaBot.Services
         /// Error message if unsuccessful.
         /// </summary>
         public string? Error { get; init; }
-    }
-
-    /// <summary>
-    /// Parameters required to join a Teams meeting.
-    /// </summary>
-    public record JoinMeetingParameters
-    {
-        /// <summary>
-        /// Chat information extracted from the meeting URL.
-        /// </summary>
-        public required ChatInfo ChatInfo { get; init; }
-
-        /// <summary>
-        /// Meeting information for the Graph API call.
-        /// </summary>
-        public required MeetingInfo MeetingInfo { get; init; }
-
-        /// <summary>
-        /// The Azure AD tenant ID.
-        /// </summary>
-        public required string TenantId { get; init; }
     }
 }

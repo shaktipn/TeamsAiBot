@@ -120,6 +120,8 @@ $env:USERNAME
 icacls $machineKey.FullName /grant "<replace-with-your-username>:RX"
 ```
 
+*Make sure that VS Code or your relevant IDE and dotnet can access networks and don't get blocked by windows firewall.*
+
 Full script:
 ```
 # ============================================
@@ -716,6 +718,11 @@ You should see:
 ---
 
 ## Troubleshooting
+
+### Native Media DLL not found
+
+Install: https://aka.ms/vs/17/release/vc_redist.x64.exe
+Restart the bot in a new terminal
 
 ### ngrok URL Changed / Bot Stopped Working After Restart
 

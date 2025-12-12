@@ -47,28 +47,27 @@ namespace TeamsMediaBot.Utilities
             var threadId = match.Groups[1].Value;
             var messageId = match.Groups[2].Value;
 
+            // Validate Thread ID and Message ID
+            if (string.IsNullOrWhiteSpace(threadId))
+            {
+                throw new ArgumentException("Meeting URL must contain Thread ID");
+            }
+            if (string.IsNullOrWhiteSpace(messageId))
+            {
+                throw new ArgumentException("Meeting URL must contain Message ID");
+            }
+
             // Extract and decode context parameter
             var contextParam = match.Groups[3].Value;
             var context = DecodeContext(contextParam);
 
-            // Build ChatInfo
-            var chatInfo = new ChatInfo
-            {
-                ThreadId = threadId,
-                MessageId = context.MessageId ?? messageId,
-                ReplyChainMessageId = null // Not typically used
-            };
-
-            // Build MeetingInfo
-            var meetingInfo = new MeetingInfo
-            {
-                AllowConversationWithoutHost = "true" // Allow bot to join without host
-            };
-
             return new JoinMeetingInfo
             {
-                ChatInfo = chatInfo,
-                MeetingInfo = meetingInfo
+                ThreadId = threadId,
+                MessageId = messageId,
+                TenantId = context.Tid,
+                OrganizerId = context.Oid,
+                ReplyChainMessageId = context.MessageId,
             };
         }
 
@@ -78,6 +77,8 @@ namespace TeamsMediaBot.Utilities
         /// </summary>
         private static JoinContext DecodeContext(string contextParam)
         {
+            JoinContext context;
+
             try
             {
                 // The context parameter might be URL-encoded JSON
@@ -87,7 +88,7 @@ namespace TeamsMediaBot.Utilities
                 var jsonDoc = JsonDocument.Parse(decodedContext);
                 var root = jsonDoc.RootElement;
 
-                return new JoinContext
+                context = new JoinContext
                 {
                     Tid = root.TryGetProperty("Tid", out var tid) ? tid.GetString() ?? "" : "",
                     Oid = root.TryGetProperty("Oid", out var oid) ? oid.GetString() ?? "" : "",
@@ -99,13 +100,25 @@ namespace TeamsMediaBot.Utilities
                 // If JSON parsing fails, try to parse as query string
                 var queryParams = ParseQueryString(contextParam);
 
-                return new JoinContext
+                context = new JoinContext
                 {
                     Tid = queryParams.GetValueOrDefault("Tid", ""),
                     Oid = queryParams.GetValueOrDefault("Oid", ""),
                     MessageId = queryParams.GetValueOrDefault("MessageId", "")
                 };
             }
+
+            // Validate all required fields are present
+            if (string.IsNullOrWhiteSpace(context.Tid))
+            {
+                throw new ArgumentException("Meeting URL must contain Tenant ID (Tid) in context parameter");
+            }
+            if (string.IsNullOrWhiteSpace(context.Oid))
+            {
+                throw new ArgumentException("Meeting URL must contain Organizer ID (Oid) in context parameter");
+            }
+
+            return context;
         }
 
         /// <summary>

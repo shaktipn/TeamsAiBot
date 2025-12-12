@@ -107,6 +107,11 @@ namespace TeamsMediaBot
                 app.UseDeveloperExceptionPage();
             }
 
+            // CRITICAL: Initialize Media Platform at startup by requesting the singleton
+            // This ensures the Media Platform SDK is initialized before any calls are made
+            var botMediaService = app.ApplicationServices.GetRequiredService<BotMediaService>();
+            logger.LogInformation("BotMediaService initialized at startup. Communications Client ready.");
+
             // Enable routing
             app.UseRouting();
 

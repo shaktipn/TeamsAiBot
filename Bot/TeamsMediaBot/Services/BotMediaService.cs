@@ -9,10 +9,12 @@ using Microsoft.Graph.Communications.Client;
 using Microsoft.Graph.Communications.Client.Authentication;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Graph.Communications.Resources;
+using Microsoft.Graph.Contracts;
 using Microsoft.Graph.Models;
 using Microsoft.Identity.Client;
 using Microsoft.Skype.Bots.Media;
 using TeamsMediaBot.Configuration;
+using TeamsMediaBot.Models;
 
 namespace TeamsMediaBot.Services
 {
@@ -298,41 +300,42 @@ namespace TeamsMediaBot.Services
         /// This is different from answering an incoming call invitation.
         /// Uses existing permission: Calls.JoinGroupCall.All (already configured in Azure AD)
         /// </remarks>
-        /// <param name="joinParams">Parameters containing chat info, meeting info, and tenant ID</param>
+        /// <param name="joinInfo">Parameters containing chat info, meeting info, and tenant ID</param>
         /// <returns>The call ID of the joined meeting</returns>
-        public async Task<string> JoinMeetingAsync(JoinMeetingParameters joinParams)
+        public async Task<string> JoinMeetingAsync(JoinMeetingInfo joinInfo)
         {
-            if (joinParams == null)
+            if (joinInfo == null)
             {
-                throw new ArgumentNullException(nameof(joinParams));
+                throw new ArgumentNullException(nameof(joinInfo));
             }
 
             _logger.LogInformation(
                 "Bot initiating join to meeting. ThreadId: {ThreadId}",
-                joinParams.ChatInfo.ThreadId);
+                joinInfo.ThreadId);
 
             try
             {
-                // Build chat info for the meeting
                 var chatInfo = new ChatInfo
                 {
-                    ThreadId = joinParams.ChatInfo.ThreadId,
-                    MessageId = joinParams.ChatInfo.MessageId,
-                    ReplyChainMessageId = joinParams.ChatInfo.ReplyChainMessageId
+                    ThreadId = joinInfo.ThreadId,
+                    MessageId = joinInfo.MessageId,
+                    // ReplyChainMessageId = joinInfo.ReplyChainMessageId
                 };
 
-                // Build meeting info - need organizer identity
+                _logger.LogInformation("Using organizer ID from meeting URL: {OrganizerId}", joinInfo.OrganizerId);
+
                 var meetingInfo = new OrganizerMeetingInfo
                 {
                     Organizer = new IdentitySet
                     {
                         User = new Identity
                         {
-                            Id = Guid.NewGuid().ToString(),
-                            DisplayName = "Meeting Organizer"
+                            Id = joinInfo.OrganizerId,
                         }
                     }
                 };
+
+                meetingInfo.Organizer.User.SetTenantId(joinInfo.TenantId);
 
                 // Create media session using the Communications Client
                 var audioSettings = new AudioSocketSettings
@@ -351,19 +354,19 @@ namespace TeamsMediaBot.Services
                     videoSocketSettings: videoSettings);
 
                 // Build the join parameters using required constructor
-                var sdkJoinParams = new Microsoft.Graph.Communications.Calls.JoinMeetingParameters(
+                var sdkJoinParams = new JoinMeetingParameters(
                     chatInfo,
                     meetingInfo,
                     mediaSession)
                 {
-                    TenantId = joinParams.TenantId
+                    TenantId = joinInfo.TenantId
                 };
 
                 // Join the meeting using the Graph Communications Client
                 // This will trigger OnIncomingCallReceived event with the new call
                 var statefulCall = await Client.Calls().AddAsync(
                     sdkJoinParams,
-                    scenarioId: Guid.NewGuid());
+                    scenarioId: Guid.NewGuid()).ConfigureAwait(false);
 
                 _logger.LogInformation("Successfully joined meeting. CallId: {CallId}", statefulCall.Id);
 
