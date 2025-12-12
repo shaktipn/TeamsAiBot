@@ -4,24 +4,24 @@ namespace TeamsMediaBot.Bot
 {
     /// <summary>
     /// Bot Framework HTTP adapter with centralized error handling.
+    /// Uses modern CloudAdapter with ConfigurationBotFrameworkAuthentication (SDK 4.14+).
     /// </summary>
-    public class AdapterWithErrorHandler : BotFrameworkHttpAdapter
+    public class AdapterWithErrorHandler : Microsoft.Bot.Builder.Integration.AspNet.Core.CloudAdapter
     {
         /// <summary>
         /// Initializes a new instance of the AdapterWithErrorHandler class.
         /// </summary>
+        /// <param name="auth">Bot Framework authentication provider</param>
         /// <param name="configuration">Application configuration</param>
         /// <param name="logger">Logger instance</param>
         public AdapterWithErrorHandler(
+            Microsoft.Bot.Connector.Authentication.BotFrameworkAuthentication auth,
             IConfiguration configuration,
-            ILogger<BotFrameworkHttpAdapter> logger)
-            : base(configuration, logger)
+            ILogger<AdapterWithErrorHandler> logger)
+            : base(auth, logger)
         {
             var appId = configuration["MicrosoftAppId"];
-            var appPass = configuration["MicrosoftAppPassword"];
             logger.LogWarning($"Bot AppId: {appId}");
-            logger.LogWarning($"Bot Password exists: {!string.IsNullOrEmpty(appPass)}");
-            logger.LogWarning($"Bot Password length: {appPass?.Length ?? 0}");
             OnTurnError = async (turnContext, exception) =>
             {
                 // Log the exception with full details
